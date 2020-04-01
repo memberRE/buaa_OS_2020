@@ -18,7 +18,7 @@ struct Page {
 	// page_alloc.  Pages allocated at boot time using pmap.c's "alloc"
 	// do not have valid reference count fields.
 
-	u_short pp_ref;
+	u_short pp_ref
 };
 
 extern struct Page *pages;
