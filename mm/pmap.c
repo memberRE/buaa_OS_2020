@@ -19,6 +19,7 @@ static u_long freemem;
 static struct Page_list page_free_list;	/* Free list of physical pages */
 
 
+
 /* Overview:
  	Initialize basemem and npage.
  	Set basemem to be 64MB, and calculate corresponding npage value.*/
