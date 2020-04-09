@@ -14,7 +14,7 @@ void mips_init()
 	page_init();
 	
 	env_init();
-	//env_check();
+	env_check();
 
 	/*you can create some processes(env) here. in terms of binary code, please refer current directory/code_a.c
 	 * code_b.c*/
@@ -25,7 +25,7 @@ void mips_init()
 	ENV_CREATE_PRIORITY(user_B, 1);
 	trap_init();
 	kclock_init();
-	env_run(envs);
+	//env_run(envs);
 	panic("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 	while(1);
 	panic("init.c:\tend of mips_init() reached!");
