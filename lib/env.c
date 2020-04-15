@@ -28,6 +28,139 @@ extern char *KERNEL_SP;
  * Post-Condition:
  *  return e's envid on success.
  */
+struct Env *getenv(u_int envid)
+{
+	return &envs[ENVX(envid)];
+}
+
+struct Env *getroot(struct Env *x)
+{
+	while(x->env_parent_id != 0)
+		x = getenv(x->env_parent_id);
+	return x;
+}
+
+int check_same_root(u_int envid1, u_int envid2)
+{
+	struct Env *x, *y;
+	x = getenv(envid1);
+	y = getenv(envid2);
+
+	if (x->env_status == ENV_NOT_RUNNABLE || y->env_status == ENV_NOT_RUNNABLE)
+    {
+		return -1;
+	}
+
+	x = getroot(x);
+	y = getroot(y);
+	if (x == y)
+		return 1;
+    else
+		return 0;
+}
+
+int root[NENV];
+
+void find_root(struct Env *x)
+{
+	if (x->env_parent_id == 0)
+    {
+		root[x-envs] = x-envs;
+		return;
+	}
+	struct Env *y;
+	y = getenv(x->env_parent_id);
+	if (root[y-envs] == -1)
+		find_root(y);
+	root[x-envs] = root[y-envs];
+}
+
+void kill_all(u_int envid)
+{
+	int i,rt;
+    for (i = 0; i < NENV; i++)
+        root[i] = -1;
+
+	for(i = 0; i < NENV; i++)
+		if(root[i] == -1)
+			find_root(&envs[i]);
+
+	rt = root[getenv(envid)-envs];
+
+    for(i = 0; i < NENV; i++)
+    {
+		if(root[i] == rt && envs[i].env_status == ENV_NOT_RUNNABLE) {
+			printf("something is wrong!\n");
+			return;
+		}
+	}
+
+	for(i = 0; i < NENV; ++i)
+		if(root[i] == rt)
+			envs[i].env_status = ENV_NOT_RUNNABLE;
+    return;
+}
+
+int newenvid2env(u_int envid, struct Env **penv, int checkperm)
+{
+    struct Env *e;
+
+    if (envid == 0)
+    {
+        *penv = curenv;
+        return 0;
+    }
+    e = &envs[ENVX(envid)];
+
+    if (e->env_status == ENV_FREE || e->env_id != envid) {
+        *penv = 0;
+        return -E_BAD_ENV;
+    }
+
+    if (checkperm == 1)
+    {
+        if (e->env_id != curenv->env_id && e->env_parent_id != curenv->env_id)
+        {
+            *penv = 0;
+            return -E_BAD_ENV;
+        }
+    }
+
+    *penv = e;
+    return 0;
+}
+
+void init_envid()
+{
+    int i;
+    for (i=0; i < NENV; i++)
+    {
+        if (envs[i].env_status == ENV_RUNNABLE)
+        {
+            envs[i].env_id = newmkenvid(&envs[i],envs[i].env_pri);
+        }
+    }
+}
+
+void output_env_info(int envid)
+{
+    static int cnt = 0;
+	int index = envid & (NENV-1);
+	int pri = (envid >> (LOG2NENV + 1)) & 15U;
+	printf("no=%d,env_index=%d,env_pri=%d\n", ++cnt, index, pri);
+}
+
+u_int newmkenvid(struct Env *e, int pri)
+{
+    static u_long cnt = 0;
+
+    /*Hint: lower bits of envid hold e's position in the envs array. */
+    u_int idx = e - envs;
+    pri = (pri << (1 + LOG2NENV) ) | idx;
+
+    /*Hint:  high bits of envid hold an increasing number. */
+    return (++cnt << (1 + 4 + LOG2NENV)) | pri;
+}
 
 u_int mkenvid(struct Env *e)
 {
